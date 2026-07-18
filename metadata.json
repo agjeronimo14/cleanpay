@@ -1,0 +1,6 @@
+{
+  "name": "CleanPay",
+  "description": "SaaS especializado en la gestión de pagos, servicios e historial transparente para empresas de limpieza y trabajadores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
