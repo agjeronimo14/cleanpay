@@ -13,8 +13,9 @@ import {
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import JefeDashboard from './components/JefeDashboard';
 import TrabajadorDashboard from './components/TrabajadorDashboard';
+import LoginScreen from './components/LoginScreen';
 import { 
-  Sparkles, Sun, Moon, User, Check, Building, RefreshCw, AlertCircle, Info, Database, Shield, Download, ExternalLink 
+  Sparkles, Sun, Moon, User, Check, Building, RefreshCw, AlertCircle, Info, Database, Shield, Download, ExternalLink, LogOut 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -22,9 +23,41 @@ export default function App() {
   // Theme state
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
+  // Logged-in User (For real production)
+  const [loggedUser, setLoggedUser] = useState<Usuario | null>(() => {
+    const saved = localStorage.getItem('cleanpay_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
   // Active Simulated User
-  const [activeUserRole, setActiveUserRole] = useState<'SUPER_ADMIN' | 'JEFE' | 'TRABAJADOR'>('JEFE');
-  const [activeUserId, setActiveUserId] = useState<string>('u_jefe1'); // Alejandro González
+  const [activeUserRole, setActiveUserRole] = useState<'SUPER_ADMIN' | 'JEFE' | 'TRABAJADOR'>(() => {
+    const saved = localStorage.getItem('cleanpay_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved).role;
+      } catch (e) {}
+    }
+    return 'JEFE';
+  });
+  
+  const [activeUserId, setActiveUserId] = useState<string>(() => {
+    const saved = localStorage.getItem('cleanpay_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved).id;
+      } catch (e) {}
+    }
+    return 'u_jefe1'; // Alejandro González
+  });
+
+  const [showSimDock, setShowSimDock] = useState<boolean>(false);
 
   // Core App States (Preserved in localStorage for persistent demo experience)
   const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
@@ -216,6 +249,20 @@ export default function App() {
     }
   };
 
+  const handleLoginSuccess = (user: Usuario) => {
+    setLoggedUser(user);
+    setActiveUserId(user.id);
+    setActiveUserRole(user.role);
+    localStorage.setItem('cleanpay_current_user', JSON.stringify(user));
+    triggerNotification(`¡Bienvenido, ${user.name}!`);
+  };
+
+  const handleLogout = () => {
+    setLoggedUser(null);
+    localStorage.removeItem('cleanpay_current_user');
+    triggerNotification('Sesión cerrada correctamente.');
+  };
+
   // Find active entity profiles
   const currentUser = usuarios.find(u => u.id === activeUserId) || usuarios[0];
   const currentEmpresa = empresas.find(e => e.id === currentUser.empresaId) || empresas[0];
@@ -231,6 +278,48 @@ export default function App() {
 
   // Ajustes belonging to the current empresa
   const ajustesDeEmpresa = ajustes.filter(a => a.empresaId === currentUser.empresaId);
+
+  if (!loggedUser) {
+    return (
+      <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'} flex flex-col justify-between`}>
+        <header className={`border-b ${darkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200/80 bg-white/90'} backdrop-blur-md sticky top-0 z-40 transition-colors`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black tracking-tighter shadow-sm shadow-emerald-600/30">
+                CP
+              </div>
+              <div>
+                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white font-sans flex items-center gap-1.5">
+                  CleanPay 
+                  <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">SaaS</span>
+                </span>
+                <p className="text-[10px] text-slate-400">Control de deuda transparente para empresas de limpieza</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition cursor-pointer"
+            >
+              {darkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center py-8">
+          <LoginScreen 
+            usuarios={usuarios} 
+            onLoginSuccess={handleLoginSuccess} 
+            darkMode={darkMode} 
+          />
+        </main>
+
+        <footer className="py-6 border-t border-slate-200/50 dark:border-slate-800/40 text-center text-xs text-slate-400">
+          <p>© 2026 CleanPay SaaS. Desarrollado de forma transparente y colaborativa.</p>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
@@ -282,12 +371,44 @@ export default function App() {
               <RefreshCw size={12} />
               Reset Datos
             </button>
+
+            {/* Profile & Logout */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+              <div className="text-right hidden sm:block">
+                <p className="text-[11px] font-bold text-slate-900 dark:text-slate-100 leading-none">
+                  {loggedUser?.name}
+                </p>
+                <p className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 capitalize mt-0.5">
+                  {loggedUser?.role.replace('_', ' ').toLowerCase()}
+                </p>
+              </div>
+              {loggedUser?.avatarUrl ? (
+                <img 
+                  src={loggedUser.avatarUrl} 
+                  alt={loggedUser.name} 
+                  className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" 
+                  referrerPolicy="no-referrer" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                  <User size={14} />
+                </div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition cursor-pointer"
+                title="Cerrar Sesión"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Simulator Control Dock (For Multi-role SaaS Testing) */}
-      <div className="bg-amber-500 text-amber-950 px-4 py-2 text-xs font-semibold">
+      {showSimDock && (
+        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-xs font-semibold">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2">
           <span className="flex items-center gap-1.5">
             <Sparkles size={14} className="shrink-0" />
@@ -348,6 +469,7 @@ export default function App() {
           </div>
         </div>
       </div>
+    )}
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -456,6 +578,17 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {/* Toggle Simulation Dock Option */}
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => setShowSimDock(!showSimDock)}
+            className="text-[11px] text-slate-400 hover:text-emerald-600 font-bold transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <Sparkles size={12} />
+            {showSimDock ? 'Ocultar panel de simulación de roles' : 'Mostrar panel de simulación de roles'}
+          </button>
+        </div>
 
       </main>
 

@@ -12,7 +12,11 @@ export const mockUsuarios: Usuario[] = [
     email: 'admin@cleanpay.com',
     role: 'SUPER_ADMIN',
     estado: 'ACTIVO',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    username: 'admin',
+    password: 'admin123',
+    preguntaSeguridad: '¿Cuál es el nombre de tu primera mascota?',
+    respuestaSeguridad: 'firulais'
   },
   {
     id: 'u_jefe1',
@@ -22,7 +26,11 @@ export const mockUsuarios: Usuario[] = [
     empresaId: 'e_cleaning_pro',
     telefono: '+1 (555) 019-2834',
     estado: 'ACTIVO',
-    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
+    username: 'alejandro',
+    password: 'jefe123',
+    preguntaSeguridad: '¿Cuál es tu color favorito?',
+    respuestaSeguridad: 'azul'
   },
   {
     id: 'u_trabajador1',
@@ -32,7 +40,11 @@ export const mockUsuarios: Usuario[] = [
     empresaId: 'e_cleaning_pro',
     telefono: '+1 (555) 014-3921',
     estado: 'ACTIVO',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    username: 'maria',
+    password: 'maria123',
+    preguntaSeguridad: '¿En qué ciudad naciste?',
+    respuestaSeguridad: 'miami'
   },
   {
     id: 'u_trabajador2',
@@ -42,7 +54,11 @@ export const mockUsuarios: Usuario[] = [
     empresaId: 'e_cleaning_pro',
     telefono: '+1 (555) 012-9481',
     estado: 'ACTIVO',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    username: 'juan',
+    password: 'juan123',
+    preguntaSeguridad: '¿Cuál es el nombre de tu primer auto?',
+    respuestaSeguridad: 'toyota'
   },
   {
     id: 'u_trabajador3',
@@ -52,7 +68,11 @@ export const mockUsuarios: Usuario[] = [
     empresaId: 'e_cleaning_pro',
     telefono: '+1 (555) 011-2384',
     estado: 'ACTIVO',
-    avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
+    username: 'laura',
+    password: 'laura123',
+    preguntaSeguridad: '¿Cuál es tu comida favorita?',
+    respuestaSeguridad: 'pizza'
   }
 ];
 

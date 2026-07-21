@@ -14,6 +14,10 @@ export interface Usuario {
   telefono?: string;
   avatarUrl?: string;
   estado: 'ACTIVO' | 'SUSPENDIDO';
+  username?: string;
+  password?: string;
+  preguntaSeguridad?: string;
+  respuestaSeguridad?: string;
 }
 
 export interface Empresa {
