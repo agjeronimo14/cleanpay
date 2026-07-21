@@ -14,12 +14,40 @@ import SuperAdminDashboard from './components/SuperAdminDashboard';
 import JefeDashboard from './components/JefeDashboard';
 import TrabajadorDashboard from './components/TrabajadorDashboard';
 import LoginScreen from './components/LoginScreen';
+import SupabaseSettings from './components/SupabaseSettings';
+import { getSupabaseCredentials } from './lib/supabase';
+import { 
+  fetchAllFromSupabase,
+  syncSaveUsuario,
+  syncDeleteUsuario,
+  syncSaveEmpresa,
+  syncSaveServicio,
+  syncDeleteServicio,
+  syncSaveEvento,
+  syncSavePago,
+  syncDeletePago,
+  syncSaveAjuste,
+  syncDeleteAjuste,
+  syncSaveDatosMigracion
+} from './lib/supabaseSync';
 import { 
   Sparkles, Sun, Moon, User, Check, Building, RefreshCw, AlertCircle, Info, Database, Shield, Download, ExternalLink, LogOut 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+// Standard RFC4122 UUID generator to ensure compatibility with Supabase primary keys
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export default function App() {
+  // Database configuration states
+  const [showDbSettings, setShowDbSettings] = useState<boolean>(false);
+  const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
+
   // Theme state
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
@@ -108,27 +136,76 @@ export default function App() {
     setTimeout(() => setNotificacion(null), 4000);
   };
 
+  // Load state from Supabase if configured, otherwise use localStorage/mock data
+  const loadStateFromSupabase = async () => {
+    const creds = getSupabaseCredentials();
+    if (!creds.isConfigured) return;
+
+    setIsLoadingDb(true);
+    try {
+      const data = await fetchAllFromSupabase();
+      if (data) {
+        setUsuarios(data.usuarios);
+        setEmpresas(data.empresas);
+        setServicios(data.servicios);
+        setPagos(data.pagos);
+        setAjustes(data.ajustes);
+        setMigraciones(data.datosMigracion);
+        
+        // Update current active profile/session if necessary
+        const currentSavedUser = localStorage.getItem('cleanpay_current_user');
+        if (currentSavedUser) {
+          try {
+            const parsed = JSON.parse(currentSavedUser);
+            const fresh = data.usuarios.find(u => u.id === parsed.id);
+            if (fresh) {
+              setLoggedUser(fresh);
+              setActiveUserId(fresh.id);
+              setActiveUserRole(fresh.role);
+              localStorage.setItem('cleanpay_current_user', JSON.stringify(fresh));
+            }
+          } catch (e) {}
+        }
+        triggerNotification('Conectado y sincronizado con Supabase.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerNotification(`Error de conexión Supabase: ${err.message || err}`);
+    } finally {
+      setIsLoadingDb(false);
+    }
+  };
+
+  // Run on mount
+  useEffect(() => {
+    loadStateFromSupabase();
+  }, []);
+
   // State Mutators
   const handleAddEmpresa = (newEmp: Omit<Empresa, 'id'>) => {
-    const id = `e_${Date.now()}`;
+    const id = generateUUID();
     const created: Empresa = { ...newEmp, id };
     setEmpresas([...empresas, created]);
     triggerNotification(`Empresa "${newEmp.name}" creada exitosamente.`);
+    syncSaveEmpresa(created);
   };
 
   const handleAddUsuario = (newUser: Omit<Usuario, 'id'>) => {
-    const id = `u_${Date.now()}`;
+    const id = generateUUID();
     const created: Usuario = { ...newUser, id };
     setUsuarios([...usuarios, created]);
     triggerNotification(`Usuario "${newUser.name}" registrado como ${newUser.role}.`);
+    syncSaveUsuario(created);
   };
 
   const handleToggleEstadoUsuario = (id: string) => {
     setUsuarios(usuarios.map(u => {
       if (u.id === id) {
         const nuevoEstado = u.estado === 'ACTIVO' ? 'SUSPENDIDO' : 'ACTIVO';
+        const updated = { ...u, estado: nuevoEstado };
         triggerNotification(`Usuario "${u.name}" ahora está ${nuevoEstado}.`);
-        return { ...u, estado: nuevoEstado };
+        syncSaveUsuario(updated);
+        return updated;
       }
       return u;
     }));
@@ -138,49 +215,57 @@ export default function App() {
     setEmpresas(empresas.map(e => {
       if (e.id === id) {
         const nuevoEstado = e.estado === 'ACTIVO' ? 'SUSPENDIDO' : 'ACTIVO';
+        const updated = { ...e, estado: nuevoEstado };
         triggerNotification(`Empresa "${e.name}" ahora está ${nuevoEstado}.`);
-        return { ...e, estado: nuevoEstado };
+        syncSaveEmpresa(updated);
+        return updated;
       }
       return e;
     }));
   };
 
   const handleAddTrabajador = (newTrab: Omit<Usuario, 'id'>) => {
-    const id = `u_${Date.now()}`;
+    const id = generateUUID();
     const created: Usuario = { ...newTrab, id };
     setUsuarios([...usuarios, created]);
     triggerNotification(`Trabajador "${newTrab.name}" creado con éxito.`);
+    syncSaveUsuario(created);
   };
 
   const handleAddServicio = (newServ: Omit<Servicio, 'id'>) => {
-    const id = `s_${Date.now()}`;
+    const id = generateUUID();
     const created: Servicio = { ...newServ, id };
     setServicios([...servicios, created]);
     triggerNotification(`Servicio "${newServ.name}" asignado con éxito.`);
+    syncSaveServicio(created);
   };
 
   const handleAddPago = (newPago: Omit<Pago, 'id'>) => {
-    const id = `p_${Date.now()}`;
+    const id = generateUUID();
     const created: Pago = { ...newPago, id };
     setPagos([created, ...pagos]);
     triggerNotification(`Pago de $${newPago.monto} registrado exitosamente.`);
+    syncSavePago(created);
   };
 
   const handleConfirmarPago = (pagoId: string) => {
     setPagos(pagos.map(p => {
       if (p.id === pagoId) {
+        const updated: Pago = { ...p, estadoConfirmacion: 'CONFIRMADO' };
         triggerNotification(`Pago por $${p.monto} ha sido confirmado y consolidado.`);
-        return { ...p, estadoConfirmacion: 'CONFIRMADO' };
+        syncSavePago(updated);
+        return updated;
       }
       return p;
     }));
   };
 
   const handleAddAjuste = (newAjuste: Omit<Ajuste, 'id'>) => {
-    const id = `aj_${Date.now()}`;
+    const id = generateUUID();
     const created: Ajuste = { ...newAjuste, id };
     setAjustes([created, ...ajustes]);
     triggerNotification(`Excepción / Ajuste de $${Math.abs(newAjuste.monto)} registrado.`);
+    syncSaveAjuste(created);
   };
 
   const handleAddMigracion = (trabajadorId: string, saldoInicial: number, fechaCorte: string) => {
@@ -193,6 +278,7 @@ export default function App() {
     };
     setMigraciones([...filtrados, nuevaMigracion]);
     triggerNotification(`Saldo inicial de migración de $${saldoInicial} actualizado.`);
+    syncSaveDatosMigracion(nuevaMigracion);
   };
 
   // Actions for Trabajador Dashboard
@@ -297,12 +383,22 @@ export default function App() {
               </div>
             </div>
 
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition cursor-pointer"
-            >
-              {darkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowDbSettings(true)}
+                className="inline-flex items-center gap-1.5 bg-emerald-600/15 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 text-[11px] font-bold px-3 py-1.5 rounded-xl transition cursor-pointer"
+              >
+                <Database size={13} />
+                BBDD Real (Supabase)
+              </button>
+
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition cursor-pointer"
+              >
+                {darkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
+              </button>
+            </div>
           </div>
         </header>
 
@@ -341,6 +437,15 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Supabase connection button */}
+            <button
+              onClick={() => setShowDbSettings(true)}
+              className="inline-flex items-center gap-1.5 bg-emerald-600/15 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 text-[11px] font-bold px-3 py-1.5 rounded-xl transition cursor-pointer"
+            >
+              <Database size={13} />
+              BBDD Real (Supabase)
+            </button>
+
             {/* Dark Mode toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
@@ -501,6 +606,7 @@ export default function App() {
               onAddUsuario={handleAddUsuario}
               onToggleEstadoUsuario={handleToggleEstadoUsuario}
               onToggleEstadoEmpresa={handleToggleEstadoEmpresa}
+              onOpenSupabaseSettings={() => setShowDbSettings(true)}
             />
           )}
 
@@ -591,6 +697,32 @@ export default function App() {
         </div>
 
       </main>
+
+      {/* Database Loading Overlay */}
+      {isLoadingDb && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center z-50 text-white gap-3">
+          <RefreshCw className="animate-spin text-emerald-500" size={32} />
+          <p className="text-sm font-semibold tracking-wide">Sincronizando con Supabase...</p>
+        </div>
+      )}
+
+      {/* Supabase connection manager modal */}
+      {showDbSettings && (
+        <SupabaseSettings 
+          onClose={() => setShowDbSettings(false)} 
+          onRefreshAppState={loadStateFromSupabase}
+          localState={{
+            empresas,
+            usuarios,
+            servicios,
+            historialServicios: [],
+            pagos,
+            ajustes,
+            datosMigracion: migraciones
+          }}
+          darkMode={darkMode}
+        />
+      )}
 
       {/* Global Footer */}
       <footer className="py-8 border-t border-slate-200/50 dark:border-slate-800/40 text-center text-xs text-slate-400">

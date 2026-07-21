@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Usuario, Empresa } from '../types';
-import { Plus, Users, Building, ShieldAlert, CheckCircle, Search, Trash2, Ban, RefreshCw } from 'lucide-react';
+import { Plus, Users, Building, ShieldAlert, CheckCircle, Search, Trash2, Ban, RefreshCw, Database } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface SuperAdminDashboardProps {
@@ -15,6 +15,7 @@ interface SuperAdminDashboardProps {
   onAddUsuario: (usuario: Omit<Usuario, 'id'>) => void;
   onToggleEstadoUsuario: (id: string) => void;
   onToggleEstadoEmpresa: (id: string) => void;
+  onOpenSupabaseSettings?: () => void;
 }
 
 export default function SuperAdminDashboard({
@@ -23,7 +24,8 @@ export default function SuperAdminDashboard({
   onAddEmpresa,
   onAddUsuario,
   onToggleEstadoUsuario,
-  onToggleEstadoEmpresa
+  onToggleEstadoEmpresa,
+  onOpenSupabaseSettings
 }: SuperAdminDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -127,6 +129,16 @@ export default function SuperAdminDashboard({
             <Plus size={16} />
             Nuevo Usuario
           </button>
+          {onOpenSupabaseSettings && (
+            <button
+              onClick={onOpenSupabaseSettings}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2 rounded-xl transition shadow-sm cursor-pointer"
+              id="btn_conectar_supabase"
+            >
+              <Database size={16} />
+              Configurar Supabase
+            </button>
+          )}
         </div>
       </div>
 

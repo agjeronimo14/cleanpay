@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# CleanPay SaaS - Control de Deuda Transparente
 
-# Run and deploy your AI Studio app
+CleanPay es una plataforma SaaS moderna diseñada para erradicar las discusiones por pagos entre empresas de limpieza y sus trabajadores, promoviendo transparencia absoluta y cuentas claras mediante un historial unificado y cálculo automático de deudas en tiempo real.
 
-This contains everything you need to run your app locally.
+## Características Principales
 
-View your app in AI Studio: https://ai.studio/apps/11ea1c34-0c82-4b19-9e0a-c25e564a3d5f
+* **Portal Multi-Inquilino**: Cada empresa de limpieza opera de manera aislada y segura.
+* **Control de Deuda**: Registro automatizado de servicios, pagos y ajustes para determinar saldos precisos.
+* **Sincronización en Tiempo Real**: Integración nativa con base de datos robusta en la nube (Supabase).
+* **Consenso de Pagos**: Historial verificado tanto por el jefe como por el trabajador para evitar discrepancias.
 
-## Run Locally
+## Configuración y Despliegue Independiente
 
-**Prerequisites:**  Node.js
+Este proyecto está configurado para ejecutarse localmente o ser desplegado de manera gratuita en la nube mediante Cloudflare Pages y Supabase.
 
+### 1. Variables de Entorno
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Crea un archivo `.env` en el directorio raíz (puedes basarte en `.env.example`) con las credenciales de tu proyecto. El sistema de base de datos se conectará automáticamente.
+
+### 2. Base de Datos en Supabase
+
+1. Crea un proyecto gratuito en [Supabase](https://supabase.com).
+2. Abre la sección de **SQL Editor** en tu panel de Supabase.
+3. Copia y pega el script completo de inicialización ubicado en `supabase-schema.sql` de este repositorio.
+4. Ejecuta el script de SQL para crear todas las tablas, funciones de trigger y políticas de seguridad (RLS).
+
+### 3. Conexión de la Aplicación
+
+Puedes configurar tus credenciales de Supabase (URL de API y clave anónima pública) directamente desde el panel de control de la interfaz web pulsando el botón **BBDD Real (Supabase)** en la barra de navegación superior.
