@@ -117,26 +117,41 @@ alter table pagos enable row level security;
 alter table ajustes enable row level security;
 alter table datos_migracion enable row level security;
 
+-- ==========================================
+-- FUNCIONES DE SEGURIDAD (SECURITY DEFINER)
+-- Evitan la recursión infinita en las políticas RLS al consultar la misma tabla
+-- ==========================================
+
+create or replace function public.get_user_role(usr_id uuid)
+returns text as $$
+  select role from public.usuarios where id = usr_id;
+$$ language sql security definer;
+
+create or replace function public.get_user_empresa(usr_id uuid)
+returns uuid as $$
+  select empresa_id from public.usuarios where id = usr_id;
+$$ language sql security definer;
+
 -- 1. Políticas de Seguridad para la tabla 'empresas'
 create policy "Super Admin completo" on empresas for all using (
-  exists (select 1 from usuarios where usuarios.id = auth.uid() and usuarios.role = 'SUPER_ADMIN')
+  public.get_user_role(auth.uid()) = 'SUPER_ADMIN'
 );
 
 create policy "Jefes ven su propia empresa" on empresas for select using (
-  exists (select 1 from usuarios where usuarios.id = auth.uid() and usuarios.empresa_id = empresas.id and usuarios.role = 'JEFE')
+  public.get_user_role(auth.uid()) = 'JEFE' and public.get_user_empresa(auth.uid()) = empresas.id
 );
 
 create policy "Trabajadores ven su propia empresa" on empresas for select using (
-  exists (select 1 from usuarios where usuarios.id = auth.uid() and usuarios.empresa_id = empresas.id and usuarios.role = 'TRABAJADOR')
+  public.get_user_role(auth.uid()) = 'TRABAJADOR' and public.get_user_empresa(auth.uid()) = empresas.id
 );
 
 -- 2. Políticas de Seguridad para la tabla 'usuarios'
 create policy "Super Admin usuarios completo" on usuarios for all using (
-  exists (select 1 from usuarios u where u.id = auth.uid() and u.role = 'SUPER_ADMIN')
+  public.get_user_role(auth.uid()) = 'SUPER_ADMIN'
 );
 
 create policy "Jefes ven/editan usuarios de su misma empresa" on usuarios for all using (
-  exists (select 1 from usuarios u where u.id = auth.uid() and u.empresa_id = usuarios.empresa_id and u.role = 'JEFE')
+  public.get_user_role(auth.uid()) = 'JEFE' and public.get_user_empresa(auth.uid()) = usuarios.empresa_id
 );
 
 create policy "Trabajadores ven su propio usuario" on usuarios for select using (
@@ -145,7 +160,7 @@ create policy "Trabajadores ven su propio usuario" on usuarios for select using 
 
 -- 3. Políticas de Seguridad para la tabla 'servicios'
 create policy "Jefe servicios completo" on servicios for all using (
-  exists (select 1 from usuarios u where u.id = auth.uid() and u.empresa_id = servicios.empresa_id and u.role = 'JEFE')
+  public.get_user_role(auth.uid()) = 'JEFE' and public.get_user_empresa(auth.uid()) = servicios.empresa_id
 );
 
 create policy "Trabajador ve sus servicios asignados" on servicios for select using (
@@ -154,7 +169,7 @@ create policy "Trabajador ve sus servicios asignados" on servicios for select us
 
 -- 4. Políticas de Seguridad para la tabla 'pagos'
 create policy "Jefe pagos completo" on pagos for all using (
-  exists (select 1 from usuarios u where u.id = auth.uid() and u.empresa_id = pagos.empresa_id and u.role = 'JEFE')
+  public.get_user_role(auth.uid()) = 'JEFE' and public.get_user_empresa(auth.uid()) = pagos.empresa_id
 );
 
 create policy "Trabajador ve sus pagos" on pagos for select using (
@@ -167,7 +182,7 @@ create policy "Trabajador registra sus propios pagos" on pagos for insert with c
 
 -- 5. Políticas de Seguridad para la tabla 'ajustes'
 create policy "Jefe ajustes completo" on ajustes for all using (
-  exists (select 1 from usuarios u where u.id = auth.uid() and u.empresa_id = ajustes.empresa_id and u.role = 'JEFE')
+  public.get_user_role(auth.uid()) = 'JEFE' and public.get_user_empresa(auth.uid()) = ajustes.empresa_id
 );
 
 create policy "Trabajador ve sus ajustes" on ajustes for select using (

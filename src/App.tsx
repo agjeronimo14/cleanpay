@@ -410,6 +410,32 @@ export default function App() {
           />
         </main>
 
+        {/* Database Loading Overlay */}
+        {isLoadingDb && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center z-50 text-white gap-3">
+            <RefreshCw className="animate-spin text-emerald-500" size={32} />
+            <p className="text-sm font-semibold tracking-wide">Sincronizando con Supabase...</p>
+          </div>
+        )}
+
+        {/* Supabase connection manager modal */}
+        {showDbSettings && (
+          <SupabaseSettings 
+            onClose={() => setShowDbSettings(false)} 
+            onRefreshAppState={loadStateFromSupabase}
+            localState={{
+              empresas,
+              usuarios,
+              servicios,
+              historialServicios: [],
+              pagos,
+              ajustes,
+              datosMigracion: migraciones
+            }}
+            darkMode={darkMode}
+          />
+        )}
+
         <footer className="py-6 border-t border-slate-200/50 dark:border-slate-800/40 text-center text-xs text-slate-400">
           <p>© 2026 CleanPay SaaS. Desarrollado de forma transparente y colaborativa.</p>
         </footer>

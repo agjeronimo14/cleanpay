@@ -16,14 +16,62 @@ export const mapEmpresaFromDB = (row: any): Empresa => ({
   estado: row.estado
 });
 
+// Mapeo estático y generador determinista para convertir IDs demo en UUIDs válidos para Supabase
+const idMap: Record<string, string> = {
+  'u_superadmin': '9620ba01-79e5-4ca2-8db4-91c8ba360a01',
+  'u_jefe1': '3bf1e012-ae31-4be3-b99b-3fa7df702b81',
+  'u_trabajador1': 'a627a195-bfde-4b95-ae04-c3e06180df11',
+  'u_trabajador2': 'dbf719b0-9f5b-4357-96a1-08103565e231',
+  'u_trabajador3': 'fc74be0f-2b28-4447-8178-95666ca0bf01',
+  'e_cleaning_pro': '1e741cde-75bf-400c-b26a-912f205c0651',
+  's_oficina_a': '0fbfbe01-1bfa-4be1-8bbf-f9cb7ea12701',
+  's_iglesia': '5a8cfb02-7cfa-4ae3-b7cf-3fbca7ea4902',
+  's_condominio': '7f7fbe03-2bfa-4be3-bcbe-bfcb7ea29703',
+  's_oficina_b': '9cbfe044-4bfa-4be4-bcbe-bfcb7ea29704',
+  'p1': 'e8cfb123-1111-4444-8888-000000000001',
+  'p2': 'e8cfb123-2222-4444-8888-000000000002',
+  'p3': 'e8cfb123-3333-4444-8888-000000000003',
+  'p4': 'e8cfb123-4444-4444-8888-000000000004',
+  'p_juan_1': 'e8cfb123-5555-4444-8888-000000000005',
+  'aj1': 'a0cfb321-1111-4444-9999-000000000001',
+  'aj2': 'a0cfb321-2222-4444-9999-000000000002',
+};
+
+export function safeUUID(id: string | null | undefined): string {
+  if (!id) {
+    return '00000000-0000-0000-0000-000000000000';
+  }
+  
+  // Validar si ya es un formato UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) {
+    return id;
+  }
+  
+  // Buscar en diccionario estático
+  if (idMap[id]) {
+    return idMap[id];
+  }
+  
+  // Generar un hash determinista para cualquier otra cadena
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  
+  const absHash = Math.abs(hash).toString(16).padStart(8, '0');
+  return `${absHash}-4000-8000-0000-${absHash.repeat(2)}`;
+}
+
 export const mapEmpresaToDB = (item: Empresa) => ({
-  id: item.id,
+  id: safeUUID(item.id),
   name: item.name,
   logo_url: item.logoUrl || null,
   direccion: item.direccion || null,
   telefono: item.telefono || null,
   correo: item.correo,
-  responsable_id: item.responsableId || null,
+  responsable_id: item.responsableId ? safeUUID(item.responsableId) : null,
   estado: item.estado
 });
 
@@ -43,11 +91,11 @@ export const mapUsuarioFromDB = (row: any): Usuario => ({
 });
 
 export const mapUsuarioToDB = (item: Usuario) => ({
-  id: item.id,
+  id: safeUUID(item.id),
   name: item.name,
   email: item.email,
   role: item.role,
-  empresa_id: item.empresaId || null,
+  empresa_id: item.empresaId ? safeUUID(item.empresaId) : null,
   telefono: item.telefono || null,
   avatar_url: item.avatarUrl || null,
   estado: item.estado,
@@ -73,7 +121,7 @@ export const mapServicioFromDB = (row: any): Servicio => ({
 });
 
 export const mapServicioToDB = (item: Servicio) => ({
-  id: item.id,
+  id: safeUUID(item.id),
   name: item.name,
   cliente: item.cliente,
   direccion: item.direccion,
@@ -82,8 +130,8 @@ export const mapServicioToDB = (item: Servicio) => ({
   monto: item.monto,
   fecha_asignacion: item.fechaAsignacion,
   fecha_finalizacion: item.fechaFinalizacion || null,
-  trabajador_id: item.trabajadorId,
-  empresa_id: item.empresaId,
+  trabajador_id: safeUUID(item.trabajadorId),
+  empresa_id: safeUUID(item.empresaId),
   estado: item.estado
 });
 
@@ -97,12 +145,12 @@ export const mapEventoFromDB = (row: any): EventoServicio => ({
 });
 
 export const mapEventoToDB = (item: EventoServicio) => ({
-  id: item.id,
-  servicio_id: item.servicioId,
+  id: safeUUID(item.id),
+  servicio_id: safeUUID(item.servicioId),
   tipo: item.tipo,
   fecha: item.fecha,
   descripcion: item.descripcion,
-  registrado_por: item.registradoPor
+  registrado_por: safeUUID(item.registradoPor)
 });
 
 export const mapPagoFromDB = (row: any): Pago => ({
@@ -122,17 +170,17 @@ export const mapPagoFromDB = (row: any): Pago => ({
 });
 
 export const mapPagoToDB = (item: Pago) => ({
-  id: item.id,
-  servicio_id: item.servicioId || null,
-  trabajador_id: item.trabajadorId,
-  empresa_id: item.empresaId,
+  id: safeUUID(item.id),
+  servicio_id: item.servicioId ? safeUUID(item.servicioId) : null,
+  trabajador_id: safeUUID(item.trabajadorId),
+  empresa_id: safeUUID(item.empresaId),
   monto: item.monto,
   fecha: item.fecha,
   hora: item.hora,
   metodo: item.metodo,
   tipo: item.tipo,
   notas: item.notas || null,
-  registrado_por: item.registradoPor,
+  registrado_por: safeUUID(item.registradoPor),
   estado_confirmacion: item.estadoConfirmacion,
   comprobante_url: item.comprobanteUrl || null
 });
@@ -150,15 +198,15 @@ export const mapAjusteFromDB = (row: any): Ajuste => ({
 });
 
 export const mapAjusteToDB = (item: Ajuste) => ({
-  id: item.id,
-  trabajador_id: item.trabajadorId,
-  empresa_id: item.empresaId,
-  servicio_id: item.servicioId || null,
+  id: safeUUID(item.id),
+  trabajador_id: safeUUID(item.trabajadorId),
+  empresa_id: safeUUID(item.empresaId),
+  servicio_id: item.servicioId ? safeUUID(item.servicioId) : null,
   tipo: item.tipo,
   monto: item.monto,
   fecha: item.fecha,
   notas: item.notas,
-  registrado_por: item.registradoPor
+  registrado_por: safeUUID(item.registradoPor)
 });
 
 export const mapDatosMigracionFromDB = (row: any): DatosMigracion => ({
@@ -169,7 +217,7 @@ export const mapDatosMigracionFromDB = (row: any): DatosMigracion => ({
 });
 
 export const mapDatosMigracionToDB = (item: DatosMigracion) => ({
-  trabajador_id: item.trabajadorId,
+  trabajador_id: safeUUID(item.trabajadorId),
   saldo_pendiente_inicial: item.saldoPendienteInicial,
   fecha_corte_inicial: item.fechaCorteInicial,
   notas: item.notas || null
